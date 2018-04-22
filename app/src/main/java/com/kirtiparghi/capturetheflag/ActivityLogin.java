@@ -14,6 +14,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -29,64 +30,64 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
 
 import java.io.Serializable;
 
 public class ActivityLogin extends Activity
 {
+    //defaults
+    public SharedPreferences.Editor loginPrefsEditor;
+    public  SharedPreferences loginPreferences;
+    private Boolean saveLogin;
+
+    //get Text
     EditText edtEmail, edtPassword;
     Button btnLogin;
     private RadioGroup radioUserTypeGroup;
     private RadioGroup radioPlayerTeamGroup;
     RadioButton radioUserType, radioPlayerTeam;
+
+    //database
     FirebaseDatabase db;
     DatabaseReference root;
-    public FirebaseAuth mAuth;
+
     String strPlayerTeam, strUserType;
     LinearLayout linearlayout;
-    @Override
-    protected void onStart() {
-        super.onStart();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        updateUI(currentUser);
-    }
+    TextView labelUser;
 
-    private void updateUI(FirebaseUser user) {
-        if (user != null) {
-            Toast.makeText(ActivityLogin.this, "Player is "+user.getEmail(),Toast.LENGTH_SHORT).show();
-
-        } else {
-            Toast.makeText(ActivityLogin.this, "No Player",Toast.LENGTH_SHORT).show();
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_login);
 
+        if (getStatusList(this)!= null) {
+            Toast.makeText(ActivityLogin.this, "get"+getStatusList(this).player,Toast.LENGTH_SHORT).show();
+            Player current=getStatusList(this);
+            Intent intent = new Intent(getApplicationContext(), ActivityPlayerHome.class);
+            intent.putExtra("player",current);
+            startActivity(intent);
+        }
+
         strPlayerTeam = "";
         strUserType = "";
-
+        labelUser = (TextView)findViewById(R.id.labelTeam);
 
         /* Fetching all data from field*/
 
         edtEmail = (EditText) findViewById(R.id.user_email);
 
-
         edtPassword = (EditText) findViewById(R.id.password);
-
 
         btnLogin = (Button) findViewById(R.id.login_button);
         radioPlayerTeamGroup = (RadioGroup) findViewById(R.id.radioTeams);
         radioUserTypeGroup =  (RadioGroup) findViewById(R.id.radioPlayers);
-        linearlayout = (LinearLayout) findViewById(R.id.linearlayout);
+        linearlayout = (LinearLayout) findViewById(R.id.playerType);
 
         // setup the firebase variables
         db = FirebaseDatabase.getInstance();
         root = db.getReference();
-
-        mAuth = FirebaseAuth.getInstance();
 
         btnLogin.setOnClickListener(new View.OnClickListener()
         {
@@ -96,7 +97,7 @@ public class ActivityLogin extends Activity
                 final String username = edtEmail.getText().toString().trim();
                 final String password = edtPassword.getText().toString().trim();
 
-             //   validateFields();
+                validateFields();
                 Log.d("err"  , username);
                 Log.d("err"  , password);
                 if (username.isEmpty()) {
@@ -105,12 +106,8 @@ public class ActivityLogin extends Activity
                     return;
                 }
 
-                if (password.isEmpty()) {
-                    // if message is blank, then quit
-                    Toast.makeText(ActivityLogin.this, "Please Enter an Password",Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                Toast.makeText(getApplicationContext(),username,Toast.LENGTH_SHORT).show();
+
+
                 if (username.equals("admin@gmail.com")) {
                     Log.e("ctf","inside if....");
                     SharedPreferences sharedpreferences = getSharedPreferences("ctf", Context.MODE_PRIVATE);
@@ -122,14 +119,15 @@ public class ActivityLogin extends Activity
                     startActivity(intent);
                 }
                 else {
-                    Log.e("ctf","inside else....");
-                    SharedPreferences sharedpreferences = getSharedPreferences("ctf", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor = sharedpreferences.edit();
-                    editor.putString("email",edtEmail.getText().toString());
-                    editor.putString("isPlayer","true");
-                    editor.commit();
+                    if (password.isEmpty()) {
+                        // if message is blank, then quit
+                        Toast.makeText(ActivityLogin.this, "Please Enter an Password",Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     performLoginOrAccountCreation(username,password,strPlayerTeam);
                 }
+
             }
         });
 
@@ -144,13 +142,14 @@ public class ActivityLogin extends Activity
                 {
                     strUserType = "ADMIN";
                     linearlayout.setVisibility(View.GONE);
+                    labelUser.setVisibility(View.GONE);
+                    edtPassword.setVisibility(View.GONE);
+
                 }
                 else {
                     strUserType = "PLAYER";
                     linearlayout.setVisibility(View.VISIBLE);
                 }
-                edtEmail.setText("");
-                edtPassword.setText("");
             }
         });
 
@@ -170,6 +169,14 @@ public class ActivityLogin extends Activity
         });
     }
 
+    private void validateFields() {
+            String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+            if (!edtEmail.getText().toString().matches(emailPattern))
+            {
+                Toast.makeText(getApplicationContext(),"Please Enter a valid email address",Toast.LENGTH_SHORT).show();
+            }
+    }
+
     private void performLoginOrAccountCreation(final String email, final String password,final String strPlayerTeam)
     {
         Query query = root.child("Player").orderByChild("player").equalTo(email);
@@ -184,6 +191,12 @@ public class ActivityLogin extends Activity
                         Player currentPlayer = player.getValue(Player.class);
 
                         if (currentPlayer.passcode.equals(password)) {
+
+                            //save default
+                            ComplexPreferences complexPreferences = ComplexPreferences.getComplexPreferences(getApplicationContext(), "object_prefs", 0);
+                            complexPreferences.putObject("object_value", currentPlayer);
+                            complexPreferences.commit();
+
                             Toast.makeText(getApplicationContext(), "User Found"+currentPlayer.getPlayer(), Toast.LENGTH_LONG).show();
                             Intent intent = new Intent(getApplicationContext(), ActivityPlayerHome.class);
                             intent.putExtra("player",currentPlayer);
@@ -199,7 +212,7 @@ public class ActivityLogin extends Activity
                     root.child("Player").child(id).setValue(newPlayer);
                     Toast.makeText(getApplicationContext(), "New Player Added "+email, Toast.LENGTH_LONG).show();
                     Intent intent = new Intent(getApplicationContext(), ActivityPlayerHome.class);
-                   intent.putExtra("player",  newPlayer);
+                    intent.putExtra("player",newPlayer);
                     startActivity(intent);
 
                 }
@@ -211,6 +224,13 @@ public class ActivityLogin extends Activity
             }
         });
     }
+
+    public static Player getStatusList(Context ctx){
+        ComplexPreferences complexPreferences = ComplexPreferences.getComplexPreferences(ctx, "object_prefs", 0);
+        Player current = complexPreferences.getObject("object_value", Player.class);
+        return current;
+    }
+
 
 
 }
