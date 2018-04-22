@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
     tools:context="com.kirtiparghi.capturetheflag.ActivityLogin">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        >
     <RadioGroup
         android:id="@+id/radioPlayers"
         android:orientation="horizontal"
@@ -27,6 +34,16 @@
             android:text="ADMIN"
             />
     </RadioGroup>
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/game_icon"
+        android:layout_width="88dp"
+        android:layout_height="59dp"
+        android:adjustViewBounds="false"
+        android:src="@drawable/flag"
+        />
+
     <EditText
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
@@ -52,18 +69,19 @@
         android:inputType="textPassword"
         />
 
-    <LinearLayout
-        android:id="@+id/linearlayout"
-        android:layout_below="@+id/password"
-        android:layout_width="match_parent"
-        android:layout_height="50dp">
         <TextView
             android:layout_marginLeft="10dp"
             android:textSize="20dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Select Team : "
+            android:id="@+id/labelTeam"
             />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/playerType">
         <RadioGroup
             android:id="@+id/radioTeams"
             android:orientation="horizontal"
@@ -101,14 +119,6 @@
         android:textColor="@android:color/background_light"
         />
 
-    <ImageView
-        android:layout_above="@+id/user_email"
-        android:layout_centerInParent="true"
-        android:id="@+id/game_icon"
-        android:layout_width="88dp"
-        android:layout_height="59dp"
-        android:adjustViewBounds="false"
-        android:src="@drawable/flag"
-        />
 
-</RelativeLayout>
+
+</LinearLayout>
